@@ -1,0 +1,4 @@
+rootProject.name = 'halService'
+
+include ":halCrawler"
+project(":halCrawler").projectDir = file("../HalCrawler")
