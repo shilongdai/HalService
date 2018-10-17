@@ -38,16 +38,11 @@ public class RabbitMQHalIndexerProxy implements HalIndexer, AutoCloseable {
 	}
 
 	@Override
-	public void index(SearchEngineCrawledData data) {
-		try {
-			String json = mapper.writeValueAsString(data);
-			rabbitMQChannel.basicPublish("", queueName,
-				MessageProperties.PERSISTENT_TEXT_PLAIN,
-				json.getBytes(StandardCharsets.UTF_8));
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
+	public void index(SearchEngineCrawledData data) throws IOException {
+		String json = mapper.writeValueAsString(data);
+		rabbitMQChannel.basicPublish("", queueName,
+			MessageProperties.PERSISTENT_TEXT_PLAIN,
+			json.getBytes(StandardCharsets.UTF_8));
 	}
 
 	@PreDestroy

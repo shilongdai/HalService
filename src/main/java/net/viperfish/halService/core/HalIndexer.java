@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public interface HalIndexer {
 
-	void index(SearchEngineCrawledData data);
+	void index(SearchEngineCrawledData data) throws IOException;
 
 	void init() throws IOException;
 

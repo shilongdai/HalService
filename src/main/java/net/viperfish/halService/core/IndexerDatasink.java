@@ -1,5 +1,6 @@
 package net.viperfish.halService.core;
 
+import java.io.IOException;
 import javax.annotation.PreDestroy;
 import net.viperfish.crawler.core.Datasink;
 import net.viperfish.crawler.html.CrawledData;
@@ -25,7 +26,7 @@ public class IndexerDatasink implements Datasink<CrawledData> {
 	}
 
 	@Override
-	public void write(CrawledData data) {
+	public void write(CrawledData data) throws IOException {
 		logger.info("Writing:" + data.getUrl());
 		SearchEngineCrawledData convert = new SearchEngineCrawledData(data);
 		repo.save(convert);
