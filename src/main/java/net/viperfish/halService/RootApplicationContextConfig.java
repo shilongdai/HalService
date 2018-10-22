@@ -28,6 +28,7 @@ import net.viperfish.halService.core.MainRepository;
 import net.viperfish.halService.core.ManagedHttpWebCrawler;
 import net.viperfish.halService.core.ManagedServiceFetcher;
 import net.viperfish.halService.core.RabbitMQHalIndexerProxy;
+import net.viperfish.halService.core.TextExtractionTagProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
@@ -221,6 +222,7 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 		crawler.registerCrawlerHandler(ttlChecker);
 		crawler.registerCrawlerHandler(patternHandler);
 		crawler.registerCrawlerHandler(checker);
+		crawler.registerProcessor("texts", new TextExtractionTagProcessor());
 		crawler.startProcessing();
 		return crawler;
 	}
