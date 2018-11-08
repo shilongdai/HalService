@@ -44,6 +44,7 @@ public class SearchEngineCrawledData extends CrawledData {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@JsonGetter
 	public long getId() {
 		return id;
 	}

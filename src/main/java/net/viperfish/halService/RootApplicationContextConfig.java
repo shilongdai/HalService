@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.regex.Pattern;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
 import javax.servlet.ServletContext;
@@ -22,6 +23,7 @@ import net.viperfish.crawler.html.crawlHandler.TTLCrawlHandler;
 import net.viperfish.crawler.html.restrictions.RobotsTxtRestrictionManager;
 import net.viperfish.halService.core.DBCrawlChecker;
 import net.viperfish.halService.core.HalIndexer;
+import net.viperfish.halService.core.HeaderExtractionProcessor;
 import net.viperfish.halService.core.IndexerDatasink;
 import net.viperfish.halService.core.Limit2PatternHandler;
 import net.viperfish.halService.core.MainRepository;
@@ -39,6 +41,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.core.Ordered;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -49,6 +52,7 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Controller;
@@ -71,7 +75,6 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 	private ServletContext context;
 	@Autowired
 	private MainRepository repo;
-
 
 	@Bean
 	public ThreadPoolTaskScheduler taskScheduler() {
@@ -117,6 +120,16 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 	public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
 		TaskScheduler scheduler = this.taskScheduler();
 		taskRegistrar.setTaskScheduler(scheduler);
+	}
+
+	@Bean
+	public AsyncTaskExecutor threadPoolTaskExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(5);
+		executor.setMaxPoolSize(32);
+		executor.setThreadNamePrefix("crawler");
+		executor.initialize();
+		return executor;
 	}
 
 	@Override
@@ -200,29 +213,33 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 
 	@Bean
 	public HttpFetcher fetcher() {
-		HttpFetcher fetcher = new ManagedServiceFetcher(
-			Integer.parseInt(context.getInitParameter(ConfigMappings.FETCH_THREAD_COUNT)),
-			context.getInitParameter(ConfigMappings.USER_AGENT));
+		HttpFetcher fetcher = new ManagedServiceFetcher("halbot", threadPoolTaskExecutor());
 		RestrictionManager robotsTxt = new RobotsTxtRestrictionManager(
 			context.getInitParameter(ConfigMappings.USER_AGENT));
 		fetcher.registerRestrictionManager(robotsTxt);
+		try {
+			fetcher.init();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 		return fetcher;
 	}
 
 	@Bean
 	public HttpWebCrawler crawler() throws IOException {
-		ManagedHttpWebCrawler crawler = new ManagedHttpWebCrawler(
-			Integer.parseInt(context.getInitParameter(ConfigMappings.PROCESSING_THREAD_COUNT)),
+		ManagedHttpWebCrawler crawler = new ManagedHttpWebCrawler(threadPoolTaskExecutor(),
 			datasink(),
 			fetcher());
 		Limit2PatternHandler patternHandler = new Limit2PatternHandler();
 		DBCrawlChecker checker = new DBCrawlChecker(this.repo);
 		patternHandler.addPattern(".*\\.edu");
-		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(2, 5);
+		patternHandler.addPattern(Pattern.quote("https://www.4icu.org/us/us-universities.htm"));
+		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(2, 3);
 		crawler.registerCrawlerHandler(ttlChecker);
 		crawler.registerCrawlerHandler(patternHandler);
 		crawler.registerCrawlerHandler(checker);
 		crawler.registerProcessor("texts", new TextExtractionTagProcessor());
+		crawler.registerProcessor("headers", new HeaderExtractionProcessor());
 		crawler.startProcessing();
 		return crawler;
 	}
