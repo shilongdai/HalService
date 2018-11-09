@@ -19,6 +19,7 @@ import net.viperfish.crawler.html.CrawledData;
 import net.viperfish.crawler.html.HttpFetcher;
 import net.viperfish.crawler.html.HttpWebCrawler;
 import net.viperfish.crawler.html.RestrictionManager;
+import net.viperfish.crawler.html.crawlHandler.MainPagePriorityBooster;
 import net.viperfish.crawler.html.crawlHandler.TTLCrawlHandler;
 import net.viperfish.crawler.html.restrictions.RobotsTxtRestrictionManager;
 import net.viperfish.halService.core.DBCrawlChecker;
@@ -123,11 +124,21 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 	}
 
 	@Bean
-	public AsyncTaskExecutor threadPoolTaskExecutor() {
+	public AsyncTaskExecutor processingExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(5);
+		executor.setCorePoolSize(10);
+		executor.setMaxPoolSize(64);
+		executor.setThreadNamePrefix("processor");
+		executor.initialize();
+		return executor;
+	}
+
+	@Bean
+	public AsyncTaskExecutor fetchingExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(10);
 		executor.setMaxPoolSize(32);
-		executor.setThreadNamePrefix("crawler");
+		executor.setThreadNamePrefix("fetcher");
 		executor.initialize();
 		return executor;
 	}
@@ -213,7 +224,7 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 
 	@Bean
 	public HttpFetcher fetcher() {
-		HttpFetcher fetcher = new ManagedServiceFetcher("halbot", threadPoolTaskExecutor());
+		HttpFetcher fetcher = new ManagedServiceFetcher("halbot", fetchingExecutor());
 		RestrictionManager robotsTxt = new RobotsTxtRestrictionManager(
 			context.getInitParameter(ConfigMappings.USER_AGENT));
 		fetcher.registerRestrictionManager(robotsTxt);
@@ -227,14 +238,17 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 
 	@Bean
 	public HttpWebCrawler crawler() throws IOException {
-		ManagedHttpWebCrawler crawler = new ManagedHttpWebCrawler(threadPoolTaskExecutor(),
+		ManagedHttpWebCrawler crawler = new ManagedHttpWebCrawler(processingExecutor(),
 			datasink(),
 			fetcher());
 		Limit2PatternHandler patternHandler = new Limit2PatternHandler();
 		DBCrawlChecker checker = new DBCrawlChecker(this.repo);
 		patternHandler.addPattern(".*\\.edu");
-		patternHandler.addPattern(Pattern.quote("https://www.4icu.org/us/us-universities.htm"));
-		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(2, 3);
+		patternHandler.addPattern(Pattern
+			.quote("https://searchenginesmarketer.com/company/resources/university-college-list/"));
+		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(3, 3);
+		MainPagePriorityBooster booster = new MainPagePriorityBooster(10);
+		crawler.registerCrawlerHandler(booster);
 		crawler.registerCrawlerHandler(ttlChecker);
 		crawler.registerCrawlerHandler(patternHandler);
 		crawler.registerCrawlerHandler(checker);
