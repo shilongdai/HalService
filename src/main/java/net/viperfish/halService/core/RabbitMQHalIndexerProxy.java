@@ -8,7 +8,6 @@ import com.rabbitmq.client.MessageProperties;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
-import javax.annotation.PreDestroy;
 
 public class RabbitMQHalIndexerProxy implements HalIndexer, AutoCloseable {
 
@@ -45,7 +44,6 @@ public class RabbitMQHalIndexerProxy implements HalIndexer, AutoCloseable {
 			json.getBytes(StandardCharsets.UTF_8));
 	}
 
-	@PreDestroy
 	@Override
 	public void close() throws Exception {
 		this.rabbitMQChannel.close();

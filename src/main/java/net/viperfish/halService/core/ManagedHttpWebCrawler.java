@@ -1,7 +1,6 @@
 package net.viperfish.halService.core;
 
 import java.util.concurrent.Future;
-import javax.annotation.PreDestroy;
 import net.viperfish.crawler.core.Datasink;
 import net.viperfish.crawler.core.ProcessedResult;
 import net.viperfish.crawler.html.CrawledData;
@@ -44,12 +43,6 @@ public class ManagedHttpWebCrawler extends HttpWebCrawler {
 		logger.info("Processing:" + content.getUrl().getToFetch() + " Priority:" + content.getUrl()
 			.getPriority());
 		return super.process(content);
-	}
-
-	@PreDestroy
-	@Override
-	public void shutdown() {
-		super.shutdown();
 	}
 
 	@Override

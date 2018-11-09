@@ -1,7 +1,6 @@
 package net.viperfish.halService.core;
 
 import java.util.concurrent.Future;
-import javax.annotation.PreDestroy;
 import net.viperfish.crawler.html.engine.PrioritizedConcurrentHttpFetcher;
 import org.springframework.core.task.AsyncTaskExecutor;
 
@@ -39,9 +38,4 @@ public class ManagedServiceFetcher extends PrioritizedConcurrentHttpFetcher {
 		return closeCalled();
 	}
 
-	@PreDestroy
-	@Override
-	public void close() {
-		super.close();
-	}
 }

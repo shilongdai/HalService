@@ -17,7 +17,7 @@
 		</RollingFile>
 	</appenders>
 	<loggers>
-		<logger level="INFO" name="net.viperfish">
+		<logger level="DEBUG" name="net.viperfish">
 			<appender-ref ref="halService"/>
 		</logger>
 		<logger level="INFO" name="org.apache">

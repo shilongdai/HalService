@@ -10,6 +10,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Pattern;
+import javax.annotation.PreDestroy;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
 import javax.servlet.ServletContext;
@@ -243,11 +244,10 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 			fetcher());
 		Limit2PatternHandler patternHandler = new Limit2PatternHandler();
 		DBCrawlChecker checker = new DBCrawlChecker(this.repo);
-		patternHandler.addPattern(".*\\.edu");
 		patternHandler.addPattern(Pattern
-			.quote("https://searchenginesmarketer.com/company/resources/university-college-list/"));
+			.quote("wikipedia.org"));
 		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(3, 3);
-		MainPagePriorityBooster booster = new MainPagePriorityBooster(10);
+		MainPagePriorityBooster booster = new MainPagePriorityBooster(10, 0.75);
 		crawler.registerCrawlerHandler(booster);
 		crawler.registerCrawlerHandler(ttlChecker);
 		crawler.registerCrawlerHandler(patternHandler);
@@ -256,5 +256,16 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 		crawler.registerProcessor("headers", new HeaderExtractionProcessor());
 		crawler.startProcessing();
 		return crawler;
+	}
+
+	@PreDestroy
+	public void cleanup() {
+		try {
+			this.crawler().shutdown();
+			this.fetcher().close();
+			this.datasink().close();
+		} catch (Exception e) {
+			log.error("Failed to close resources", e);
+		}
 	}
 }
