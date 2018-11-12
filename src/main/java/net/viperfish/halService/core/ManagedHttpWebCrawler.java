@@ -40,7 +40,7 @@ public class ManagedHttpWebCrawler extends HttpWebCrawler {
 
 	@Override
 	protected ProcessedResult<CrawledData> process(FetchedContent content) throws ParsingException {
-		logger.info("Processing:" + content.getUrl().getToFetch() + " Priority:" + content.getUrl()
+		logger.info("Processing:" + content.getUrl().getSource() + " Priority:" + content.getUrl()
 			.getPriority());
 		return super.process(content);
 	}

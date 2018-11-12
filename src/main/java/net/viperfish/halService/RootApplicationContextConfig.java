@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.regex.Pattern;
 import javax.annotation.PreDestroy;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
@@ -20,14 +19,13 @@ import net.viperfish.crawler.html.CrawledData;
 import net.viperfish.crawler.html.HttpFetcher;
 import net.viperfish.crawler.html.HttpWebCrawler;
 import net.viperfish.crawler.html.RestrictionManager;
-import net.viperfish.crawler.html.crawlHandler.MainPagePriorityBooster;
+import net.viperfish.crawler.html.crawlHandler.CascadingPriorityBooster;
 import net.viperfish.crawler.html.crawlHandler.TTLCrawlHandler;
 import net.viperfish.crawler.html.restrictions.RobotsTxtRestrictionManager;
 import net.viperfish.halService.core.DBCrawlChecker;
 import net.viperfish.halService.core.HalIndexer;
 import net.viperfish.halService.core.HeaderExtractionProcessor;
 import net.viperfish.halService.core.IndexerDatasink;
-import net.viperfish.halService.core.Limit2PatternHandler;
 import net.viperfish.halService.core.MainRepository;
 import net.viperfish.halService.core.ManagedHttpWebCrawler;
 import net.viperfish.halService.core.ManagedServiceFetcher;
@@ -127,8 +125,8 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 	@Bean
 	public AsyncTaskExecutor processingExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(10);
-		executor.setMaxPoolSize(64);
+		executor.setCorePoolSize(3);
+		executor.setMaxPoolSize(16);
 		executor.setThreadNamePrefix("processor");
 		executor.initialize();
 		return executor;
@@ -137,8 +135,8 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 	@Bean
 	public AsyncTaskExecutor fetchingExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(10);
-		executor.setMaxPoolSize(32);
+		executor.setCorePoolSize(4);
+		executor.setMaxPoolSize(10);
 		executor.setThreadNamePrefix("fetcher");
 		executor.initialize();
 		return executor;
@@ -242,15 +240,11 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 		ManagedHttpWebCrawler crawler = new ManagedHttpWebCrawler(processingExecutor(),
 			datasink(),
 			fetcher());
-		Limit2PatternHandler patternHandler = new Limit2PatternHandler();
 		DBCrawlChecker checker = new DBCrawlChecker(this.repo);
-		patternHandler.addPattern(Pattern
-			.quote("wikipedia.org"));
 		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(3, 3);
-		MainPagePriorityBooster booster = new MainPagePriorityBooster(10, 0.75);
+		CascadingPriorityBooster booster = new CascadingPriorityBooster(50, 0.75);
 		crawler.registerCrawlerHandler(booster);
 		crawler.registerCrawlerHandler(ttlChecker);
-		crawler.registerCrawlerHandler(patternHandler);
 		crawler.registerCrawlerHandler(checker);
 		crawler.registerProcessor("texts", new TextExtractionTagProcessor());
 		crawler.registerProcessor("headers", new HeaderExtractionProcessor());
