@@ -20,6 +20,7 @@ import net.viperfish.crawler.html.Anchor;
 import net.viperfish.crawler.html.CrawledData;
 import net.viperfish.halService.URL2StringConverter;
 import net.viperfish.halService.URLSerializer;
+import net.viperfish.halService.compression.HtmlCompressor;
 
 @Entity
 @Table(name = "Crawled")
@@ -82,6 +83,7 @@ public class SearchEngineCrawledData extends CrawledData {
 	@Basic
 	@Override
 	@JsonGetter
+	@Convert(converter = HtmlCompressor.class)
 	public String getContent() {
 		return super.getContent();
 	}
