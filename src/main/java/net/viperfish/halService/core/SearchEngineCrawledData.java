@@ -7,26 +7,12 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
-import javax.persistence.Basic;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 import net.viperfish.crawler.html.Anchor;
 import net.viperfish.crawler.html.CrawledData;
-import net.viperfish.halService.URL2StringConverter;
 import net.viperfish.halService.URLSerializer;
-import net.viperfish.halService.compression.HtmlCompressor;
 
-@Entity
-@Table(name = "Crawled")
+
 public class SearchEngineCrawledData extends CrawledData {
-
-	private long id;
 
 	public SearchEngineCrawledData() {
 		super();
@@ -43,18 +29,7 @@ public class SearchEngineCrawledData extends CrawledData {
 		}
 	}
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@JsonGetter
-	public long getId() {
-		return id;
-	}
 
-	public void setId(long id) {
-		this.id = id;
-	}
-
-	@Basic
 	@Override
 	@JsonGetter
 	public String getTitle() {
@@ -66,8 +41,6 @@ public class SearchEngineCrawledData extends CrawledData {
 		super.setTitle(title);
 	}
 
-	@Basic
-	@Convert(converter = URL2StringConverter.class)
 	@Override
 	@JsonGetter
 	@JsonSerialize(using = URLSerializer.class)
@@ -80,10 +53,8 @@ public class SearchEngineCrawledData extends CrawledData {
 		super.setUrl(url);
 	}
 
-	@Basic
 	@Override
 	@JsonGetter
-	@Convert(converter = HtmlCompressor.class)
 	public String getContent() {
 		return super.getContent();
 	}
@@ -93,7 +64,6 @@ public class SearchEngineCrawledData extends CrawledData {
 		super.setContent(content);
 	}
 
-	@Basic
 	@Override
 	@JsonGetter
 	public String getChecksum() {
@@ -106,7 +76,6 @@ public class SearchEngineCrawledData extends CrawledData {
 	}
 
 	@JsonGetter
-	@Transient
 	@Override
 	public List<Anchor> getAnchors() {
 		return super.getAnchors();
@@ -118,29 +87,9 @@ public class SearchEngineCrawledData extends CrawledData {
 	}
 
 	@JsonAnyGetter
-	@Transient
 	@Override
 	public Map<String, Object> getProperties() {
 		return super.getProperties();
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		SearchEngineCrawledData that = (SearchEngineCrawledData) o;
-		return id == that.id;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(super.hashCode(), id);
-	}
 }

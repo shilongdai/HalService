@@ -26,9 +26,9 @@ import net.viperfish.halService.core.DBCrawlChecker;
 import net.viperfish.halService.core.HalIndexer;
 import net.viperfish.halService.core.HeaderExtractionProcessor;
 import net.viperfish.halService.core.IndexerDatasink;
-import net.viperfish.halService.core.MainRepository;
 import net.viperfish.halService.core.ManagedHttpWebCrawler;
 import net.viperfish.halService.core.ManagedServiceFetcher;
+import net.viperfish.halService.core.MapperRepository;
 import net.viperfish.halService.core.RabbitMQHalIndexerProxy;
 import net.viperfish.halService.core.TextExtractionTagProcessor;
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +74,7 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 	@Autowired
 	private ServletContext context;
 	@Autowired
-	private MainRepository repo;
+	private MapperRepository mapperRepository;
 
 	@Bean
 	public ThreadPoolTaskScheduler taskScheduler() {
@@ -216,7 +216,7 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 
 	@Bean
 	public Datasink<CrawledData> datasink() throws IOException {
-		Datasink<CrawledData> result = new IndexerDatasink(this.indexProxy(), repo);
+		Datasink<CrawledData> result = new IndexerDatasink(this.indexProxy());
 		result.init();
 		return result;
 	}
@@ -240,7 +240,7 @@ public class RootApplicationContextConfig implements AsyncConfigurer, Scheduling
 		ManagedHttpWebCrawler crawler = new ManagedHttpWebCrawler(processingExecutor(),
 			datasink(),
 			fetcher());
-		DBCrawlChecker checker = new DBCrawlChecker(this.repo);
+		DBCrawlChecker checker = new DBCrawlChecker(mapperRepository);
 		TTLCrawlHandler ttlChecker = new TTLCrawlHandler(3, 3);
 		CascadingPriorityBooster booster = new CascadingPriorityBooster(50, 0.75);
 		crawler.registerCrawlerHandler(booster);

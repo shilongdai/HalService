@@ -10,13 +10,11 @@ import org.apache.logging.log4j.Logger;
 public class IndexerDatasink implements Datasink<CrawledData> {
 
 	private HalIndexer proxy;
-	private MainRepository repo;
 	private Logger logger;
 	private boolean isClosed;
 
-	public IndexerDatasink(HalIndexer indexer, MainRepository repo) {
+	public IndexerDatasink(HalIndexer indexer) {
 		this.proxy = indexer;
-		this.repo = repo;
 		isClosed = false;
 	}
 
@@ -29,9 +27,7 @@ public class IndexerDatasink implements Datasink<CrawledData> {
 	public void write(CrawledData data) throws IOException {
 		logger.info("Writing:" + data.getUrl());
 		SearchEngineCrawledData convert = new SearchEngineCrawledData(data);
-		repo.save(convert);
 		proxy.index(convert);
-		logger.debug("Saved ID:" + convert.getId());
 	}
 
 	@Override
